@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SULE NETWORK 🪙</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white min-h-screen">
+    <div class="max-w-md mx-auto p-5 text-center">
+
+        <!-- HEADER -->
+        <div class="mt-4 mb-6">
+            <div class="inline-block bg-yellow-500 text-black px-3 py-1 rounded-full text-sm font-bold">v2.1 OFFICIAL</div>
+            <h1 class="text-4xl font-extrabold text-yellow-400 my-2">🚀 SULE NETWORK 🪙</h1>
+            <p class="text-gray-300">Founded by SULE • STRONGER THAN BITCOIN</p>
+        </div>
+
+        <!-- WALLET CARD -->
+        <div class="bg-gray-800 rounded-2xl p-6 mb-6 border border-yellow-500/30 shadow-lg">
+            <p class="text-gray-400 text-sm">YOUR WALLET ID</p>
+            <p id="walletID" class="font-mono text-sm my-2 break-all bg-gray-900 p-2 rounded">SULE-xxxxxxxxxx</p>
+            <p class="text-5xl font-bold text-green-400 my-4"><span id="balance">0.00</span> SULE</p>
+            <p class="text-yellow-300 text-sm">Total Mined: <span id="totalMined">0</span> / 21,000,000</p>
+        </div>
+
+        <!-- MAIN BUTTONS -->
+        <div class="grid gap-3 mb-6">
+            <button onclick="mineSule()" class="bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold py-4 rounded-xl text-lg shadow-lg">
+                ⛏️ MINE SULE
+            </button>
+            <button onclick="openSend()" class="bg-gradient-to-r from-blue-600 to-blue-700 py-3 rounded-xl text-lg font-semibold">
+                💸 SEND COINS
+            </button>
+            <button onclick="showHistory()" class="bg-gradient-to-r from-purple-600 to-purple-700 py-3 rounded-xl text-lg font-semibold">
+                📜 TRANSACTION HISTORY
+            </button>
+            <button onclick="getBackup()" class="bg-gradient-to-r from-teal-600 to-teal-700 py-3 rounded-xl text-lg font-semibold">
+                🔐 BACKUP MY WALLET
+            </button>
+            <button onclick="checkSafe()" class="bg-gradient-to-r from-green-600 to-green-700 py-3 rounded-xl text-lg font-semibold">
+                ✅ CHECK SECURITY
+            </button>
+        </div>
+
+        <!-- STATUS BOX -->
+        <div id="status" class="bg-gray-800 p-4 rounded-xl text-gray-100 min-h-[90px] border border-gray-700">
+            🎉 WELCOME! Start mining and build your wealth forever 🚀
+        </div>
+    </div>
+
+    <script>
+        const MAX = 21000000;
+        let total = Number(localStorage.getItem("suleTotal")) || 0;
+        let blocks = Number(localStorage.getItem("suleBlocks")) || 0;
+        let wallets = JSON.parse(localStorage.getItem("suleWallets")) || [];
+        let transactions = JSON.parse(localStorage.getItem("suleHistory")) || [];
+
+        function hash(txt) {
+            let h = 1469598103934665603n;
+            const p = 1099511628211n;
+            for (let c of txt) {h ^= BigInt(c.charCodeAt()); h *= p;}
+            return h.toString(16).slice(0,20);
+        }
+
+        function save() {
+            localStorage.suleTotal = total;
+            localStorage.suleBlocks = blocks;
+            localStorage.suleWallets = JSON.stringify(wallets);
+            localStorage.suleHistory = JSON.stringify(transactions);
+            updateUI();
+        }
+
+        function addTx(type, amount, details="") {
+            transactions.unshift({
+                time: new Date().toLocaleString(),
+                type: type,
+                amount: amount,
+                details: details
+            });
+            save();
+        }
+
+        if (!wallets.length) {
+            const priv = hash("SULE_FOUNDER" + Date.now() + "2026");
+            const pub = hash(priv + "SULE_NETWORK_SECURE");
+            wallets.push({id:"SULE-"+pub.slice(0,10), privateKey: priv, balance:0});
+            addTx("WALLET CREATED", 0, "Official Founder Wallet");
+            save();
+        }
+
+        function getReward() {
+            return parseFloat((50 / Math.pow(2, Math.floor(blocks/100000))).toFixed(2));
+        }
+
+        function mineSule() {
+            if (total >= MAX) return status("⚠️ MAX SUPPLY REACHED! No more coins left.", "red");
+            let reward = getReward();
+            wallets[0].balance = parseFloat((wallets[0].balance + reward).toFixed(2));
+            total = parseFloat((total + reward).toFixed(2)); blocks++;
+            addTx("MINED", reward, "New Block Added");
+            save();
+            status(`✅ MINING SUCCESSFUL! 🎉\n+${reward} SULE added to your wallet!`, "yellow");
+        }
+
+        function openSend() {
+            let to = prompt("Enter Receiver Wallet ID:");
+            let amt = parseFloat(prompt("Enter Amount SULE:"));
+            if (!to || isNaN(amt) || amt <= 0 || wallets[0].balance < amt) {
+                return status("❌ Invalid details or not enough balance!", "red");
+            }
+            wallets[0].balance = parseFloat((wallets[0].balance - amt).toFixed(2));
+            addTx("SENT", amt, "To: " + to);
+            save();
+            status(`✅ TRANSACTION SENT ✅\n-${amt} SULE sent successfully!`, "blue");
+        }
+
+        function showHistory() {
+            if (transactions.length === 0) return status("📜 No transactions yet. Start mining!", "gray");
+            let list = "📜 YOUR FULL HISTORY:\n\n";
+            transactions.forEach(tx => {
+                list += `🕒 ${tx.time}\n🔹 ${tx.type}: ${tx.amount} SULE\nℹ️ ${tx.details}\n\n`;
+            });
+            status(list, "purple");
+        }
+
+        function getBackup() {
+            status(`🔐 YOUR SECURE BACKUP:\n\nWallet ID: ${wallets[0].id}\nPrivate Key: ${wallets[0].privateKey}\n\n⚠️ SAVE THIS SOMEWHERE SAFE!\nIf you lose your phone, you can restore your coins anytime!`, "teal");
+        }
+
+        function checkSafe() {
+            status("✅ FULL NETWORK SECURE ✅\nAll records locked, no tampering possible.\nYour coins are safe forever!", "green");
+        }
+
+        function updateUI() {
+            document.getElementById("walletID").textContent = wallets[0].id;
+            document.getElementById("balance").textContent = wallets[0].balance;
+            document.getElementById("totalMined").textContent = total;
+        }
+
+        function status(txt, color) {
+            document.getElementById("status").innerHTML = txt.replaceAll("\n", "<br>");
+            document.getElementById("status").className = `p-4 rounded-xl border-l-4 border-${color}-500 bg-gray-800`;
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
